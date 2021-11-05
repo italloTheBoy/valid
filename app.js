@@ -9,12 +9,12 @@ const app = express()
 app.use(express.json())
 
 
-function authorize(req, res, next) {
-  const authHeader = req.headers['Authorization']
+function checkToken(req, res, next) {
+  const authHeader = req.headers['authorization']
   const token = authHeader && authHeader.split(' ')[1]
 
   if (!token) {
-    res.status(401).json({msg: 'Você não tem autorização para acesssar esta pagina'})
+    res.status(401).json({msg: 'Acesso negado'})
   }
 
   try {
@@ -104,7 +104,7 @@ app.post('/login', (req, res) => {
     })
 })
 
-app.get('/find/:id', (req, res) => {
+app.get('/find/:id', checkToken, (req, res) => {
   const id = req.params.id
 
   User.findById(id, '-password')
@@ -112,7 +112,6 @@ app.get('/find/:id', (req, res) => {
       if (!user) {
         res.status(404).json({msg: 'Usuasrio não existe'})
       } else {
-        authorize()
         res.status(200).json({ user })
       }
     }).catch(err => {
@@ -121,12 +120,10 @@ app.get('/find/:id', (req, res) => {
 })
 
 
-const USER = process.env.DB_USER
-const PASS = process.env.DB_PASS
 const PORT = process.env.PORT
 
-mongoose.connect(`mongodb+srv://${USER}:${PASS}@cluster0.1gikp.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`)
+mongoose.connect(`mongodb://localhost/auth`)
   .then(() => {
     app.listen(PORT, () => console.log('Server running'))
   })
-  .catch(err => console.log(err.message))
+  .catch(err => console.log(err))
